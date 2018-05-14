@@ -1,0 +1,31 @@
+@import '~@microsoft/sp-office-ui-fabric-core/dist/sass/SPFabricCore.scss';
+
+.searchVisualizer {
+  .loading {
+      color: #003366;
+  }
+}
+
+.error {
+  a {
+      text-decoration: none;
+      &:visited,
+      &:hover {
+          text-decoration: none;
+      }
+      .icon {
+          font-size: 9px;
+      }
+  }
+}
+
+.dtLink {
+  text-decoration: none;
+}
+
+.title {
+  @include ms-font-xl;
+  @include ms-fontColor-black;
+  padding-bottom: 1em;
+  display: block;
+}

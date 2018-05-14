@@ -1,0 +1,13 @@
+{
+  "$schema": "https://dev.office.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "datatables-spsearch-client-side-solution",
+    "id": "9d428eb2-a613-42e1-add4-23d53b4a1ed8",
+    "version": "1.1.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true
+  },
+  "paths": {
+    "zippedPackage": "solution/datatables-spsearch.sppkg"
+  }
+}

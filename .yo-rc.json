@@ -1,0 +1,8 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "version": "1.4.1",
+    "libraryName": "datatables-spsearch",
+    "libraryId": "9d428eb2-a613-42e1-add4-23d53b4a1ed8",
+    "environment": "spo"
+  }
+}

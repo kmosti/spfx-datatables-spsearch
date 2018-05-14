@@ -1,0 +1,23 @@
+{
+  "$schema": "https://dev.office.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "datatables-search-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/datatablesSearch/DatatablesSearchWebPart.js",
+          "manifest": "./src/webparts/datatablesSearch/DatatablesSearchWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {
+    "jquery": {
+      "path": "https://code.jquery.com/jquery-3.3.1.min.js",
+      "globalName": "jQuery"
+    }
+  },
+  "localizedResources": {
+    "DatatablesSearchWebPartStrings": "lib/webparts/datatablesSearch/loc/{locale}.js"
+  }
+}
