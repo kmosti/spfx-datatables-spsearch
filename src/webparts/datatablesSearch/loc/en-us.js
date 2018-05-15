@@ -22,6 +22,9 @@ define([], function () {
       "PrivateGroupsFieldLabelOn": "Yes",
       "PrivateGroupsFieldLabelOff": "No, only public groups",
       "ResultTypeLabel": "Show projects or documents?",
+      "ColumnsLabel": "Select columns",
+      "ColumnsHeaderText": "Configure Columns",
+      "SearchFieldsLabel": "Select all search properties used in this web part",
 
       "QuertValidationEmpty": "Please specify a search query",
       "TemplateValidationEmpty": "Please specify the URL of your template",

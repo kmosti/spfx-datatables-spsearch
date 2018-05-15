@@ -24,7 +24,7 @@
       "name": "Hosted workbench",
       "type": "chrome",
       "request": "launch",
-      "url": "https://enter-your-SharePoint-site/_layouts/workbench.aspx",
+      "url": "https://ateara.sharepoint.com/sites/projects/_layouts/15/workbench.aspx/_layouts/workbench.aspx",
       "webRoot": "${workspaceRoot}",
       "sourceMaps": true,
       "sourceMapPathOverrides": {

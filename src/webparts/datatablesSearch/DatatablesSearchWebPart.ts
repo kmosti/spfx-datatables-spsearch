@@ -9,6 +9,8 @@ import {
   PropertyPaneSlider,
   PropertyPaneDropdown
 } from '@microsoft/sp-webpart-base';
+import { PropertyFieldCustomList, CustomListFieldType } from 'sp-client-custom-fields/lib/PropertyFieldCustomList';
+import { PropertyFieldSearchPropertiesPicker } from 'sp-client-custom-fields/lib/PropertyFieldSearchPropertiesPicker';
 
 import * as strings from 'DatatablesSearchWebPartStrings';
 import DatatablesSearch from './components/DatatablesSearch';
@@ -40,8 +42,9 @@ export default class DatatablesSearchWebPart extends BaseClientSideWebPart<IData
         sorting: this.properties.sorting,
         duplicates: this.properties.duplicates,
         privateGroups: this.properties.privateGroups,
-        resulttype: this.properties.resulttype,
-        context: this.context
+        context: this.context,
+        columns: this.properties.columns,
+        SeachFields: this.properties.SeachFields
     }
     );
 
@@ -63,6 +66,9 @@ export default class DatatablesSearchWebPart extends BaseClientSideWebPart<IData
                 {
                     groupName: strings.QueryGroupName,
                     groupFields: [
+                        PropertyPaneTextField('title', {
+                            label: strings.TitleFieldLabel
+                        }),
                         PropertyPaneTextField('query', {
                             label: strings.QueryFieldLabel,
                             description: strings.QueryFieldDescription,
@@ -70,21 +76,44 @@ export default class DatatablesSearchWebPart extends BaseClientSideWebPart<IData
                             onGetErrorMessage: this._queryValidation,
                             deferredValidationTime: 500
                         }),
+                        PropertyFieldSearchPropertiesPicker('SeachFields', {
+                          label: strings.SearchFieldsLabel,
+                          selectedProperties: this.properties.SeachFields,
+                          loadingText: 'Loading...',
+                          noResultsFoundText: 'No properties found',
+                          suggestionsHeaderText: 'Suggested Properties',
+                          disabled: false,
+                          onPropertyChange: this.onPropertyPaneFieldChanged.bind(this),
+                          render: this.render.bind(this),
+                          disableReactivePropertyChanges: this.disableReactivePropertyChanges,
+                          properties: this.properties,
+                          onGetErrorMessage: null,
+                          deferredValidationTime: 0,
+                          key: 'searchPropertiesFieldId'
+                       }),
+                        PropertyFieldCustomList('columns', {
+                          label: strings.ColumnsLabel,
+                          value: this.properties.columns,
+                          headerText: strings.ColumnsHeaderText,
+                          fields: [
+                            { id: 'Title', title: 'Title', required: true, type: CustomListFieldType.string },
+                            { id: 'Enable', title: 'Enable', required: true, type: CustomListFieldType.boolean },
+                            { id: 'Type', title: 'Type', required: true, hidden: true, type: CustomListFieldType.string },
+                            { id: 'SortedBy', title: 'Sort by', required: true, hidden: false, type: CustomListFieldType.boolean },
+                            { id: 'MapTo', title: 'Map to search property', required: false, hidden: false, type: CustomListFieldType.string },
+                            { id: 'path', title: 'URL field', required: false, hidden: false, type: CustomListFieldType.string }
+                          ],
+                          onPropertyChange: this.onPropertyPaneFieldChanged,
+                          render: this.render.bind(this),
+                          disableReactivePropertyChanges: this.disableReactivePropertyChanges,
+                          context: this.context,
+                          properties: this.properties,
+                          key: 'tilesMenuListField'
+                        }),
                         PropertyPaneSlider('maxResults', {
                             label: strings.FieldsMaxResults,
                             min: 1,
                             max: 500
-                        }),
-                        PropertyPaneDropdown('resulttype', {
-                            label: strings.ResultTypeLabel,
-                            options: [{
-                                key: "project",
-                                text: strings.ResultTypeProject
-                            },{
-                                key: "document",
-                                text: strings.ResultTypeDocument
-                            }],
-                            selectedKey: "document"
                         }),
                         PropertyPaneTextField('sorting', {
                             label: strings.SortingFieldLabel
@@ -98,21 +127,6 @@ export default class DatatablesSearchWebPart extends BaseClientSideWebPart<IData
                             label: strings.PrivateGroupsFieldLabel,
                             onText: strings.PrivateGroupsFieldLabelOn,
                             offText: strings.PrivateGroupsFieldLabelOff
-                        })
-                    ]
-                }
-            ]
-        },
-        {
-            header: {
-                description: strings.PropertyPaneDescription
-            },
-            groups: [
-                {
-                    groupName: strings.TemplateGroupName,
-                    groupFields: [
-                        PropertyPaneTextField('title', {
-                            label: strings.TitleFieldLabel
                         })
                     ]
                 }

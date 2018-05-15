@@ -20,12 +20,30 @@
     "description": { "default": "Uses the datatables jQuery plugin to render search results returned from the SharePoint search API" },
     "officeFabricIconFontName": "Search",
     "properties": {
-            "query": "*",
-            "maxResults": 500,
-            "sorting": "",
+            "query": "IsDocument:true -fileextension:aspx",
+            "maxResults": 100,
+            "sorting": "lastmodifiedtime:descending",
             "duplicates": false,
             "privateGroups": true,
-            "resulttype": "document"
+            "columns": [
+              {
+                "Enable":"true",
+                "MapTo":"Filename",
+                "path":"ServerRedirectedURL",
+                "SortedBy":"false",
+                "Title":"File",
+                "Type":"string"
+              },
+              {
+                "Enable":"true",
+                "MapTo":"LastModifiedTime",
+                "path":"",
+                "SortedBy":"true",
+                "Title":"Modified",
+                "Type":"date"
+              }
+            ],
+            "SeachFields": ["Title","Path","ServerRedirectedURL","Filename","LastModifiedTime"]
         }
   }]
 }

@@ -31,6 +31,8 @@ export default class DatatablesSearch extends React.Component<IDatatablesSearchP
   private _pageNr: number = 0;
   private _compId: string = "";
   private _tokenHelper: SearchTokenHelper;
+  private _columns: string[];
+  private _datatableConfig: any;
 
   constructor(props: IDatatablesSearchProps, state: ISearchVisualizerState) {
     super(props);
@@ -62,12 +64,13 @@ export default class DatatablesSearch extends React.Component<IDatatablesSearchP
     } else if (prevProps.query !== this.props.query ||
         prevProps.maxResults !== this.props.maxResults ||
         prevProps.sorting !== this.props.sorting ||
-        prevProps.resulttype !== this.props.resulttype ||
         prevProps.duplicates !== this.props.duplicates ||
+        JSON.stringify(prevProps.columns) !== JSON.stringify(this.props.columns) ||
+        JSON.stringify(prevProps.SeachFields) !== JSON.stringify(this.props.SeachFields) ||
         prevProps.privateGroups !== this.props.privateGroups) {
-        this._resetLoadingState();
-        // Only refresh the search results
-        this._processSearchTasks();
+          this._resetLoadingState();
+          // Only refresh the search results
+          this._processSearchTasks();
     }
   }
 
@@ -78,6 +81,7 @@ export default class DatatablesSearch extends React.Component<IDatatablesSearchP
   }
 
   private _resetLoadingState() {
+    this._columns = [];
     // Reset state
     this.setState({
         loading: true,
@@ -90,12 +94,7 @@ export default class DatatablesSearch extends React.Component<IDatatablesSearchP
    * Processing the search web part tasks
    */
   private _processSearchTasks(): void {
-    // Retrieve the next set of results
-    if ( this.props.resulttype == "document") {
-        this._processResults();
-    } else {
-        this._processProjectResults();
-    }
+    this._processResults();
   }
 
   /**
@@ -106,7 +105,7 @@ export default class DatatablesSearch extends React.Component<IDatatablesSearchP
     let _searchQuerySettings: SearchQuery = {
       TrimDuplicates: this.props.duplicates,
       RowLimit: this.props.maxResults,
-      SelectProperties: ["FileExtension","AuthorOWSUSER","ModifiedBy","Filename","CreatedBy","LastModifiedTime","path","ServerRedirectedURL"],
+      SelectProperties: this.props.SeachFields,
       Properties: [{
         Name: "EnableDynamicGroups",
         Value: {
@@ -145,36 +144,36 @@ export default class DatatablesSearch extends React.Component<IDatatablesSearchP
 
     pnp.sp.search(q).then( (searchResp: SearchResults)  => {
 
-    let itemsHtml: string = "";
+      let itemsHtml: string = "";
 
-    for ( let doc of searchResp.PrimarySearchResults as Array<IDocumentSearchResult> ) {
-      let path: any = doc.ServerRedirectedURL || encodeURI(doc.path);
-      let croppedTitle: string = "";
-      let modifiedDate: moment.Moment = moment(doc.LastModifiedTime, "YYYY-MM-DDTHH:mm:ss.SSSSSSSZ");
+      for ( let doc of searchResp.PrimarySearchResults as Array<IDocumentSearchResult> ) {
+        itemsHtml += "<tr>";
+        for ( let col of this.props.columns ) {
 
-      if ( doc.Filename.length > 45 ) {
-        croppedTitle = doc.Filename.substr(0,45) + "...";
-      } else {
-          croppedTitle = doc.Filename;
+          if ( col.Type.toLowerCase() == "string" ) {
+            if ( col.path.length > 0 ){
+              let path: any = doc[col.MapTo] || encodeURI(doc.Path);
+              itemsHtml += `
+                <td data-search="${doc[col.MapTo]}">
+                  <a href="${doc[col.path]}" class="${styles.dtLink}" title="${doc[col.MapTo]}">${doc[col.MapTo]}</a>
+                </td>`;
+            } else {
+              itemsHtml += `<td>${doc[col.MapTo]}</td>`;
+            }
+          } else if (col.Type.toLowerCase() == "date"){
+            itemsHtml += `
+            <td data-order="${ moment( doc[col.MapTo] ).format("YYYYMMDDHHmm") }">
+                ${moment( doc[col.MapTo] ).format("DD/MM/YY HH:mm")}
+            </td>`;
+          }
+        }
+        itemsHtml += "</tr>";
       }
-      itemsHtml += `
-        <tr>
-            <td data-search="${doc.Filename}">
-                <a href="${path}" class="${styles.dtLink}" title="${doc.Filename}">${croppedTitle}</a>
-            </td>
-            <td data-order="${modifiedDate.format("YYYYMMDDHHmm")}">
-                ${modifiedDate.format("DD/MM/YY HH:mm")}
-            </td>
-            <td>
-                ${doc.ModifiedBy}
-            </td>
-        </tr>`;
-    }
 
-    this.setState({
-      loading: false,
-      result: itemsHtml
-    }, () => this.renderDatatables() );
+      this.setState({
+        loading: false,
+        result: itemsHtml
+      }, () => this.renderDatatables() );
 
     }).catch((error: any) => {
         this.setState({
@@ -184,108 +183,16 @@ export default class DatatablesSearch extends React.Component<IDatatablesSearchP
 
   }
 
-  /**
-   * Processing the search result retrieval process for projects
-   */
-  private _processProjectResults() {
-
-    let _searchQuerySettings: SearchQuery = {
-      TrimDuplicates: this.props.duplicates,
-      RowLimit: this.props.maxResults,
-      SelectProperties: ["Title", "SPWebUrl", "AarbakkeProjectnr", "AarbakkeProjectOwner", "AarbakkeProjectStart"],
-      Properties: [{
-        Name: "EnableDynamicGroups",
-        Value: {
-          BoolVal: this.props.privateGroups,
-          QueryPropertyValueTypeIndex: 3
-        }
-      }]
-    };
-
-    if (this.props.sorting && this.props.sorting.split(":").length > 0) {
-      let sortprop: string = this.props.sorting.split(":")[0];
-      if (this.props.sorting.split(":")[1]) {
-        let direction: string = this.props.sorting.split(":")[1];
-        let directionEnum: number = null;
-        switch( direction.toLowerCase() ) {
-          case "ascending":
-            directionEnum = 0;
-            break;
-          case "descending":
-            directionEnum = 1;
-            break;
-        }
-
-        _searchQuerySettings.SortList = [
-          {
-            Property: sortprop,
-            Direction: directionEnum
-          }
-        ];
-        _searchQuerySettings.EnableSorting = true;
-      }
-    }
-
-    const query = !this._isEmptyString(this.props.query) ? `${this._tokenHelper.replaceTokens(this.props.query)}` : "'*'";
-
-    const q = SearchQueryBuilder.create(query, _searchQuerySettings).rowLimit(this.props.maxResults);
-
-    pnp.sp.search(q).then( (searchResp: SearchResults)  => {
-
-      let itemsHtml: string = "";
-
-      for ( let doc of searchResp.PrimarySearchResults as Array<IProjectSearchResult> ) {
-        let path: any = doc.SPWebUrl || encodeURI(doc.Path);
-        let croppedTitle: string = "";
-        let prosjektid: string = doc.AarbakkeProjectnr || "No number defined";
-        let prosjekteier: string = doc.AarbakkeProjectOwner || "No owner defined";
-        let prosjektstart: moment.Moment = null;
-        let dateValid: boolean = true;
-
-        if ( doc.Title.length > 45 ) {
-          croppedTitle = doc.Title.substr(0,45) + "...";
-        } else {
-            croppedTitle = doc.Title;
-        }
-        if ( doc.AarbakkeProjectStart && moment(doc.AarbakkeProjectStart).isValid() ) {
-          prosjektstart = moment(doc.AarbakkeProjectStart);
-        } else {
-          dateValid = false;
-        }
-        itemsHtml += `
-          <tr>
-              <td data-search="${doc.Title}">
-                  <a href="${path}" class="${styles.dtLink}" title="${doc.Title}">${croppedTitle}</a>
-              </td>
-              <td data-order="${prosjektstart.format("YYYYMMDDHHmm")}">
-                  ${prosjektstart.format("DD/MM/YY")}
-              </td>
-              <td>
-                  ${prosjekteier}
-              </td>
-              <td>
-                  ${prosjektid}
-              </td>
-          </tr>`;
-      }
-
-      this.setState({
-        loading: false,
-        result: itemsHtml
-      }, () => this.renderDatatables() );
-
-    }).catch((error: any) => {
-          this.setState({
-              error: error.toString()
-          });
-    });
-  }
-
   private renderDatatables() {
+    let columnOrder: number = 0;
+    this.props.columns.forEach( (col, i )=> {
+      if (col.SortedBy == "true" && col.SortedBy !== "") {
+        columnOrder = i;
+      }
+    });
     let table = this.refs[this._compId];
-    /* tslint:disable */
     let datatable = ( jQuery(table) as any ).DataTable({
-      order: [[1, "desc"]],
+      order: [[columnOrder, "desc"]],
       language: {
         lengthMenu: strings.lengthMenu,
         search: strings.search,
@@ -300,7 +207,6 @@ export default class DatatablesSearch extends React.Component<IDatatablesSearchP
         }
       }
     });
-    /* tslint:enable */
   }
 
 
@@ -340,37 +246,19 @@ export default class DatatablesSearch extends React.Component<IDatatablesSearchP
     }
 
     if ( !this.state.loading ) {
-
-      if (this.props.resulttype == "document") {
-        view = <div>
-          <span className={styles.title}>{this.props.title}</span>
-          <table ref={this._compId} className="compact hover">
-            <thead>
-                <tr>
-                    <th>Title</th>
-                    <th>Modified</th>
-                    <th>Modified by</th>
-                </tr>
-            </thead>
-            <tbody dangerouslySetInnerHTML={{__html: this.state.result}}></tbody>
-          </table>
-        </div>;
-      } else {
-        view = <div>
-          <span className={styles.title}>{this.props.title}</span>
-          <table ref={this._compId} className="compact hover">
-            <thead>
-                <tr>
-                    <th>Title</th>
-                    <th>Project start</th>
-                    <th>Project owner</th>
-                    <th>Project number</th>
-                </tr>
-            </thead>
-            <tbody dangerouslySetInnerHTML={{__html: this.state.result}}></tbody>
-          </table>
-        </div>;
-      }
+      view = <div>
+        <span className={styles.title}>{this.props.title}</span>
+        <table ref={this._compId} className="compact hover">
+          <thead>
+              <tr>
+                {this.props.columns.map( col => {
+                  return <th>{col.Title}</th>;
+                })}
+              </tr>
+          </thead>
+          <tbody dangerouslySetInnerHTML={{__html: this.state.result}}></tbody>
+        </table>
+      </div>;
 
     }
 

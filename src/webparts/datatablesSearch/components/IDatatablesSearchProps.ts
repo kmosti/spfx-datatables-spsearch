@@ -9,8 +9,10 @@ export interface IDatatablesSearchProps {
     sorting: string;
     duplicates: boolean;
     privateGroups: boolean;
-    resulttype: ResultType;
+    //resulttype: ResultType;
     context: IWebPartContext;
+    columns?: any[];
+    SeachFields: string[];
 }
 
 export type ResultType = "project" | "document";

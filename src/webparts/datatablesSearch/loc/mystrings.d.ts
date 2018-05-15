@@ -22,6 +22,9 @@ declare interface IDatatablesSearchWebPartStrings {
   PrivateGroupsFieldLabelOn: string;
   PrivateGroupsFieldLabelOff: string;
   ResultTypeLabel: string;
+  ColumnsLabel: string;
+  ColumnsHeaderText: string;
+  SearchFieldsLabel: string;
 
   /* Validation */
   QuertValidationEmpty: string;

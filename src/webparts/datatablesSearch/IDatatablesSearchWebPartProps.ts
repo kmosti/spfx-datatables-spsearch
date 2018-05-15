@@ -7,7 +7,9 @@ export interface IDataTablesSearchWebPartProps {
   scriptloading: boolean;
   duplicates: boolean;
   privateGroups: boolean;
-  resulttype: ResultType;
+  //resulttype: ResultType;
+  columns?: any[];
+  SeachFields: string[];
 }
 
 export type ResultType = "project" | "document";

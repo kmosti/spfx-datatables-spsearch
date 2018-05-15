@@ -15,9 +15,11 @@
     "jquery": {
       "path": "https://code.jquery.com/jquery-3.3.1.min.js",
       "globalName": "jQuery"
-    }
+    },
+    "sp-client-custom-fields": "node_modules/sp-client-custom-fields/dist/sp-client-custom-fields.bundle.js"
   },
   "localizedResources": {
-    "DatatablesSearchWebPartStrings": "lib/webparts/datatablesSearch/loc/{locale}.js"
+    "DatatablesSearchWebPartStrings": "lib/webparts/datatablesSearch/loc/{locale}.js",
+    "sp-client-custom-fields/strings": "node_modules/sp-client-custom-fields/lib/loc/{locale}.js"
   }
 }
