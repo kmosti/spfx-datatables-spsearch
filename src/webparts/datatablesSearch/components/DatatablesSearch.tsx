@@ -149,22 +149,23 @@ export default class DatatablesSearch extends React.Component<IDatatablesSearchP
       for ( let doc of searchResp.PrimarySearchResults as Array<IDocumentSearchResult> ) {
         itemsHtml += "<tr>";
         for ( let col of this.props.columns ) {
-
-          if ( col.Type.toLowerCase() == "string" ) {
-            if ( col.path.length > 0 ){
-              let path: any = doc[col.MapTo] || encodeURI(doc.Path);
+          if ( col.Enable == "true" ){
+            if ( col.Type.toLowerCase() == "string" ) {
+              if ( col.path.length > 0 ){
+                let path = doc[col.MapTo] || encodeURI(doc.Path);
+                itemsHtml += `
+                  <td data-search="${doc[col.MapTo]}">
+                    <a href="${path}" class="${styles.dtLink}" title="${doc[col.MapTo]}">${doc[col.MapTo]}</a>
+                  </td>`;
+              } else {
+                itemsHtml += `<td>${doc[col.MapTo]}</td>`;
+              }
+            } else if (col.Type.toLowerCase() == "date"){
               itemsHtml += `
-                <td data-search="${doc[col.MapTo]}">
-                  <a href="${doc[col.path]}" class="${styles.dtLink}" title="${doc[col.MapTo]}">${doc[col.MapTo]}</a>
-                </td>`;
-            } else {
-              itemsHtml += `<td>${doc[col.MapTo]}</td>`;
+              <td data-order="${ moment( doc[col.MapTo] ).format("YYYYMMDDHHmm") }">
+                  ${moment( doc[col.MapTo] ).format("DD/MM/YY HH:mm")}
+              </td>`;
             }
-          } else if (col.Type.toLowerCase() == "date"){
-            itemsHtml += `
-            <td data-order="${ moment( doc[col.MapTo] ).format("YYYYMMDDHHmm") }">
-                ${moment( doc[col.MapTo] ).format("DD/MM/YY HH:mm")}
-            </td>`;
           }
         }
         itemsHtml += "</tr>";
@@ -252,7 +253,9 @@ export default class DatatablesSearch extends React.Component<IDatatablesSearchP
           <thead>
               <tr>
                 {this.props.columns.map( col => {
-                  return <th>{col.Title}</th>;
+                  if(col.Enable == "true") {
+                    return <th>{col.Title}</th>;
+                  }
                 })}
               </tr>
           </thead>
