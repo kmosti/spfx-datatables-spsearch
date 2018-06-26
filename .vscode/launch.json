@@ -21,10 +21,27 @@
       ]
     },
     {
-      "name": "Hosted workbench",
+      "name": "Atea RA",
       "type": "chrome",
       "request": "launch",
-      "url": "https://ateara.sharepoint.com/sites/projects/_layouts/15/workbench.aspx/_layouts/workbench.aspx",
+      "url": "https://ateara.sharepoint.com/sites/projects/_layouts/15/workbench.aspx",
+      "webRoot": "${workspaceRoot}",
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "webpack:///../../../src/*": "${webRoot}/src/*",
+        "webpack:///../../../../src/*": "${webRoot}/src/*",
+        "webpack:///../../../../../src/*": "${webRoot}/src/*"
+      },
+      "runtimeArgs": [
+        "--remote-debugging-port=9222",
+        "-incognito"
+      ]
+    },
+    {
+      "name": "Hennig Olsen",
+      "type": "chrome",
+      "request": "launch",
+      "url": "https://hennigolsen.sharepoint.com/teams/prosjekter/_layouts/15/workbench.aspx",
       "webRoot": "${workspaceRoot}",
       "sourceMaps": true,
       "sourceMapPathOverrides": {

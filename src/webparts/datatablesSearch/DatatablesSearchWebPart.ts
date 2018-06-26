@@ -55,6 +55,20 @@ export default class DatatablesSearchWebPart extends BaseClientSideWebPart<IData
     return Version.parse('1.0');
   }
 
+  private validateMaxResults(value: string): string {
+    if ( value === null || value.length === 0 ) {
+      return 'Please set a value';
+    }
+    if ( isNaN(Number(value)) ) {
+      return "The value must be a number";
+    }
+    if ( Number(value) < 1 ) {
+      return "The value cannot be less than 1";
+    }
+
+    return "";
+  }
+
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
     return {
       pages: [
@@ -105,16 +119,21 @@ export default class DatatablesSearchWebPart extends BaseClientSideWebPart<IData
                           ],
                           onPropertyChange: this.onPropertyPaneFieldChanged,
                           render: this.render.bind(this),
-                          disableReactivePropertyChanges: this.disableReactivePropertyChanges,
+                          disableReactivePropertyChanges: true,//this.disableReactivePropertyChanges,
                           context: this.context,
                           properties: this.properties,
                           key: 'tilesMenuListField'
                         }),
-                        PropertyPaneSlider('maxResults', {
+                        PropertyPaneTextField('maxResults', {
                             label: strings.FieldsMaxResults,
-                            min: 1,
-                            max: 500
+                            onGetErrorMessage: this.validateMaxResults.bind(this),
+                            validateOnFocusOut: true
                         }),
+                        // PropertyPaneSlider('maxResults', {
+                        //     label: strings.FieldsMaxResults,
+                        //     min: 1,
+                        //     max: 100000
+                        // }),
                         PropertyPaneTextField('sorting', {
                             label: strings.SortingFieldLabel
                         }),

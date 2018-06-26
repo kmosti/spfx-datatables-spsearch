@@ -23,7 +23,11 @@ const dtjQuery: any = (window as any).jQuery;
 
 export default class DatatablesSearch extends React.Component<IDatatablesSearchProps, ISearchVisualizerState> {
 
-  private _results: any[] = [];
+  private _results: SearchResults = null;
+  private _promises = [];
+  private _startRow: number = 0;
+  private _currentResults: number = this.props.maxResults;
+  private _rowLimit: number = this.props.maxResults > 500 ? 500 : this.props.maxResults;
   private _fields: string[] = [];
   private _templateMarkup: string = "";
   private _tmplDoc: Document;
@@ -56,20 +60,19 @@ export default class DatatablesSearch extends React.Component<IDatatablesSearchP
   }
 
   public componentDidUpdate(prevProps: IDatatablesSearchProps, prevState: ISearchVisualizerState): void {
-    // Check if the template needs to be updated
+
     if (prevProps.title !== this.props.title) {
         this._resetLoadingState();
-        // Refresh template and search results
         this._processSearchTasks();
     } else if (prevProps.query !== this.props.query ||
         prevProps.maxResults !== this.props.maxResults ||
         prevProps.sorting !== this.props.sorting ||
         prevProps.duplicates !== this.props.duplicates ||
+        prevProps.privateGroups !== this.props.privateGroups ||
         JSON.stringify(prevProps.columns) !== JSON.stringify(this.props.columns) ||
-        JSON.stringify(prevProps.SeachFields) !== JSON.stringify(this.props.SeachFields) ||
-        prevProps.privateGroups !== this.props.privateGroups) {
+        JSON.stringify(prevProps.SeachFields) !== JSON.stringify(this.props.SeachFields)
+      ) {
           this._resetLoadingState();
-          // Only refresh the search results
           this._processSearchTasks();
     }
   }
@@ -80,8 +83,26 @@ export default class DatatablesSearch extends React.Component<IDatatablesSearchP
     datatable.destroy();
   }
 
+  private extendSearch(query, querySettings, startRow): Promise<any> {
+    let q = SearchQueryBuilder.create(query, querySettings).startRow(startRow);
+    return pnp.sp.search(q).then( (extendedSearchResp: SearchResults)  => {
+      this._results.PrimarySearchResults.push(...extendedSearchResp.PrimarySearchResults);
+      Promise.resolve();
+    }).catch( err => {
+      Promise.reject(err);
+    });
+  }
+
   private _resetLoadingState() {
     this._columns = [];
+    this._results = null;
+    this._promises = [];
+    this._startRow = 0;
+    this._currentResults = this.props.maxResults;
+    this._rowLimit = this.props.maxResults > 500 ? 500 : this.props.maxResults;
+    this._fields = [];
+    this._totalResults = 0;
+
     // Reset state
     this.setState({
         loading: true,
@@ -140,41 +161,63 @@ export default class DatatablesSearch extends React.Component<IDatatablesSearchP
     }
 
     const query = !this._isEmptyString(this.props.query) ? `${this._tokenHelper.replaceTokens(this.props.query)}` : "*";
-    const q = SearchQueryBuilder.create(query, _searchQuerySettings).rowLimit(this.props.maxResults);
+    const q = SearchQueryBuilder.create(query, _searchQuerySettings);
 
     pnp.sp.search(q).then( (searchResp: SearchResults)  => {
 
-      let itemsHtml: string = "";
+      this._results = searchResp;
 
-      for ( let doc of searchResp.PrimarySearchResults as Array<IDocumentSearchResult> ) {
-        itemsHtml += "<tr>";
-        for ( let col of this.props.columns ) {
-          if ( col.Enable == "true" ){
-            if ( col.Type.toLowerCase() == "string" ) {
-              if ( col.path.length > 0 ){
-                let path = doc[col.MapTo] || encodeURI(doc.Path);
-                itemsHtml += `
-                  <td data-search="${doc[col.MapTo]}">
-                    <a href="${path}" class="${styles.dtLink}" title="${doc[col.MapTo]}">${doc[col.MapTo]}</a>
-                  </td>`;
+      if ( this._rowLimit < this.props.maxResults && this._rowLimit < searchResp.TotalRows) {
+          this._currentResults = this._currentResults - this._rowLimit;
+          while ( this._currentResults > 0 ) {
+              if ( this._currentResults <= this._rowLimit ) {
+                  this._startRow = this.props.maxResults - this._currentResults;
+                  _searchQuerySettings.RowLimit = this._currentResults;
+                  this._rowLimit = this._currentResults;
               } else {
-                itemsHtml += `<td>${doc[col.MapTo]}</td>`;
+                this._startRow = this._startRow + this._rowLimit;
               }
-            } else if (col.Type.toLowerCase() == "date"){
-              itemsHtml += `
-              <td data-order="${ moment( doc[col.MapTo] ).format("YYYYMMDDHHmm") }">
-                  ${moment( doc[col.MapTo] ).format("DD/MM/YY HH:mm")}
-              </td>`;
-            }
+              this._currentResults = this._currentResults - this._rowLimit;
+              this._promises.push( this.extendSearch(q, _searchQuerySettings, this._startRow) );
           }
-        }
-        itemsHtml += "</tr>";
       }
 
-      this.setState({
-        loading: false,
-        result: itemsHtml
-      }, () => this.renderDatatables() );
+      Promise.all(this._promises).then( res => {
+        let itemsHtml: string = "";
+
+        for ( let doc of this._results.PrimarySearchResults as Array<IDocumentSearchResult> ) {
+          itemsHtml += "<tr>";
+          for ( let col of this.props.columns ) {
+            if ( col.Enable == "true" ){
+              if ( col.Type.toLowerCase() == "string" ) {
+                if ( col.path.length > 0 ){
+                  let path = doc[col.path] || encodeURI(doc.Path);
+                  itemsHtml += `
+                    <td data-search="${doc[col.MapTo]}">
+                      <a href="${path}" class="${styles.dtLink}" title="${doc[col.MapTo]}">${doc[col.MapTo]}</a>
+                    </td>`;
+                } else {
+                  itemsHtml += `<td>${doc[col.MapTo]}</td>`;
+                }
+              } else if (col.Type.toLowerCase() == "date"){
+                itemsHtml += `
+                <td data-order="${ moment( doc[col.MapTo] ).format("YYYYMMDDHHmm") }">
+                    ${moment( doc[col.MapTo] ).format("DD/MM/YY HH:mm")}
+                </td>`;
+              }
+            }
+          }
+          itemsHtml += "</tr>";
+        }
+        this.setState({
+          loading: false,
+          result: itemsHtml
+        }, () => this.renderDatatables() );
+      }).catch(function(err) {
+        this.setState({
+            error: err.toString()
+        });
+      });
 
     }).catch((error: any) => {
         this.setState({
